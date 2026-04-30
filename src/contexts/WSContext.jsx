@@ -9,9 +9,15 @@ export function WSProvider({ children }) {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      console.log('No token, skipping WebSocket connection');
+      return;
+    }
 
-    const wsUrl = `${import.meta.env.VITE_WS_URL}?token=${token}`;
+    console.log('Connecting WebSocket with token...');
+    const wsUrl = `${import.meta.env.VITE_WS_URL}/?token=${token}`;
+    console.log('WS URL:', wsUrl);
+    
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
@@ -27,6 +33,7 @@ export function WSProvider({ children }) {
     ws.onmessage = (e) => {
       try {
         const msg = JSON.parse(e.data);
+        console.log('WebSocket message:', msg);
         if (msg.type === 'TICKER_UPDATE') {
           setPrices(prev => ({ 
             ...prev, 
@@ -43,7 +50,11 @@ export function WSProvider({ children }) {
       setIsConnected(false);
     };
 
-    return () => ws.close();
+    return () => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+    };
   }, [token]);
 
   return (
