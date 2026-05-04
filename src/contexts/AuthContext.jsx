@@ -1,29 +1,50 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from "react";
+import api from "../api/axios";
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
-export function AuthProvider({ children }) {
-  const [token, setToken] = useState(localStorage.getItem('token'));
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')));
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem("token") || null);
+  const [loading, setLoading] = useState(true);
 
-  function login(t, u) {
-    localStorage.setItem('token', t);
-    localStorage.setItem('user', JSON.stringify(u));
-    setToken(t);
-    setUser(u);
-  }
+  useEffect(() => {
+    if (token) {
+      api.get("/auth/me")
+        .then((res) => setUser(res.data))
+        .catch(() => logout())
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, [token]);
 
-  function logout() {
-    localStorage.clear();
+  const login = (tokenStr, userData) => {
+    localStorage.setItem("token", tokenStr);
+    setToken(tokenStr);
+    setUser(userData);
+  };
+
+  const logout = () => {
+    localStorage.removeItem("token");
     setToken(null);
     setUser(null);
-  }
+  };
+
+  const refreshUser = async () => {
+    try {
+      const res = await api.get("/auth/me");
+      setUser(res.data);
+    } catch (err) {
+      console.error("Failed to refresh user");
+    }
+  };
 
   return (
-    <AuthContext.Provider value={{ token, user, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );
-}
+};
 
 export const useAuth = () => useContext(AuthContext);
