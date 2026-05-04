@@ -29,7 +29,7 @@ export const MarketProvider = ({ children }) => {
 
   useEffect(() => {
     if (!token) return;
-    const wsUrl = import.meta.env.VITE_WS_URL || "ws://localhost:5000";
+    const wsUrl = import.meta.env.VITE_WS_URL || "VITE_WS_URL = wss://backendmid.onrender.com";
     const socket = new WebSocket(wsUrl, token);
     socketRef.current = socket;
 
